@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система отслеживания состояний тракторов</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="upper">
+        <h2>Введите ID трактора:</h2>
+        <form id="tractorForm">
+            <input type="text" id="tractorId" placeholder="Введите ID трактора">
+            <button type="button" onclick="getTractorInfo()">Получить информацию</button>
+            <button type="button" onclick="sendToService()">Отправить на ТО</button>
+        </form>
+        <div id="popup" class="popup" style="display: none;">
+            <div class="popup-content" id="popupContent"></div>
+            <button onclick="closePopup()">Закрыть</button>
+        </div>
+    </div>
+
+    <div class="lower">
+        <h2>Тракторы</h2>
+        <table id="databaseTable">
+            <!-- Table content will be populated dynamically -->
+        </table>
+    </div>
+
+    <!-- Element to show predictions -->
+    <div id="predictions"></div>
+
+    <script>
+        function getTractorInfo() {
+            var tractorId = document.getElementById('tractorId').value;
+
+            // Показываем всплывающее окно
+            var popup = document.getElementById('popup');
+            popup.style.display = 'block';
+
+            // Отправляем запрос на сервер для получения информации о тракторе
+            fetch('/get-tractor-info?id=' + tractorId)
+            .then(response => {
+                // Проверяем статус ответа
+                if (response.ok) {
+                    // Парсим JSON ответ
+                    return response.json();
+                } else {
+                    // Если ошибка, выбрасываем ошибку и обрабатываем её в следующем блоке catch
+                    throw new Error('Ошибка: ' + response.statusText);
+                }
+            })
+            .then(data => {
+                // Если получена информация о тракторе
+                var popupContent = document.getElementById('popupContent');
+                popupContent.innerHTML = `
+                    <h3>Информация о тракторе:</h3>
+                    <p>Техническое обслуживание: ${data.serviceNeeded ? 'Требуется' : 'Не требуется'}</p>
+                    <p>Дата последнего обслуживания: ${data.lastServiceDate}</p>
+                    <p>Статус трактора: ${data.isOutOfOrder ? 'Неисправен' : 'Работоспособен'}</p>
+                    <p>Предзаказ запасных частей: ${data.preorderSpareParts ? 'Требуется' : 'Не требуется'}</p>
+                `;
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                var popupContent = document.getElementById('popupContent');
+                popupContent.innerHTML = `
+                    <h3>Ошибка:</h3>
+                    <p>${error.message}</p>
+                `;
+            });
+        }
+
+        function closePopup() {
+            var popup = document.getElementById('popup');
+            popup.style.display = 'none';
+        }
+
+        function sendToService() {
+            // Implement the functionality to send the tractor to service here
+            // You can use fetch or any other method to send the request to the server
+        }
+
+        function sendPredictionRequest(data) {
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Failed to get predictions');
+                }
+            })
+            .then(predictions => {
+                console.log('Predictions:', predictions);
+                // Display or use the predictions as needed
+                showPredictions(predictions);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        // Function to display predictions on the frontend
+        function showPredictions(predictions) {
+            document.getElementById('predictions').innerText = JSON.stringify(predictions);
+        }
+
+        // Example data to send to the backend for prediction
+        const inputData = { 
+            'some_data'
+        };
+
+        // Call the function to send prediction request
+        sendPredictionRequest(inputData);
+    </script>
+</body>
+</html>
